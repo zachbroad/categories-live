@@ -1,10 +1,10 @@
-import { UUID } from 'crypto';
 import Room from './Room';
 
 export interface ClientToServerEvents {
   connection: () => void;
   disconnect: () => void;
-  joinRoom: (roomId: UUID) => void;
+  joinRoom: (roomId: string) => void;
+  // leaveRoom: (roomId: string) => void;
 }
 
 export interface ServerToClientEvents {
@@ -19,5 +19,5 @@ export interface InterServerEvents {
 }
 
 export interface SocketData {
-  user_id: UUID;
+  user_id: string;
 }

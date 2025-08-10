@@ -15,3 +15,4 @@ public/dist
 build
 auto-imports.d.ts
 *.tsbuildinfo
+original-web-app

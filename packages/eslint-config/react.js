@@ -5,7 +5,8 @@ import globals from 'globals';
 
 import defaultConfig from './index.js';
 
-import tailwind from 'eslint-plugin-tailwindcss';
+// Tailwind CSS ESLint plugin is not yet compatible with Tailwind CSS v4
+// import tailwind from 'eslint-plugin-tailwindcss';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -75,18 +76,18 @@ export default [
   // JSX A11y
   jsxA11y.flatConfigs.recommended,
 
-  // Tailwind
-  ...tailwind.configs['flat/recommended'],
-  {
-    rules: {
-      'tailwindcss/no-custom-classname': 'off'
-    },
-    settings: {
-      tailwindcss: {
-        callees: ['cn', 'classnames', 'clsx', 'ctl'],
-        config: './tailwind.config.ts',
-        removeDuplicates: true
-      }
-    }
-  }
+  // Tailwind CSS ESLint plugin disabled - not compatible with Tailwind CSS v4 yet
+  // ...tailwind.configs['flat/recommended'],
+  // {
+  //   rules: {
+  //     'tailwindcss/no-custom-classname': 'off'
+  //   },
+  //   settings: {
+  //     tailwindcss: {
+  //       callees: ['cn', 'classnames', 'clsx', 'ctl'],
+  //       config: './tailwind.config.ts',
+  //       removeDuplicates: true
+  //     }
+  //   }
+  // }
 ];

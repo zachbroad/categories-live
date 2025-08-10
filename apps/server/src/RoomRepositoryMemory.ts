@@ -1,6 +1,7 @@
 import Room from './Room';
 import Client from './Client';
 import IRoomRepository from './IRoomRepository';
+import { Server } from 'socket.io';
 
 class RoomRepositoryMemory implements IRoomRepository {
   private rooms: Map<string, Room>;
@@ -9,9 +10,8 @@ class RoomRepositoryMemory implements IRoomRepository {
     this.rooms = new Map();
   }
 
-  public async createRoom(name: string, capacity: number, owner: Client): Promise<Room> {
-    const room = new Room(name, capacity);
-    room.owner = owner;
+  public async createRoom(name: string, capacity: number, owner: Client, io?: Server): Promise<Room> {
+    const room = new Room(name, capacity, owner, true, io);
     this.rooms.set(room.slug, room);
     return room;
   }

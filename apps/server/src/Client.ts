@@ -1,25 +1,33 @@
-import { Socket } from 'socket.io';
-import Room from './Room';
-import DIContainer from './DIContainer';
+import Room from '@categories/server/Room';
+import { Socket, Server } from 'socket.io';
+import { v4 as uuidv4 } from 'uuid';
+import RoomService from './RoomService';
 
 class Client {
-  public id: string;
+  public id: string; // UUID for database
   public username: string;
   public socket: Socket;
   public address: string;
   public roomSlug: string | null; // TODO: Improve this
+  private roomService?: RoomService;
+  private io?: Server;
 
   constructor(socket: Socket, name: string = 'No Name', address: string) {
     this.socket = socket;
-    this.id = socket.id;
+    this.id = uuidv4(); // Generate UUID for database
     this.username = name;
     this.address = address;
     this.roomSlug = null;
   }
 
+  public setDependencies(roomService: RoomService, io: Server): void {
+    this.roomService = roomService;
+    this.io = io;
+  }
+
   public async getRoom(): Promise<Room | undefined> {
-    if (this.roomSlug) {
-      return DIContainer.roomService.getRoom(this.roomSlug);
+    if (this.roomSlug && this.roomService) {
+      return this.roomService.getRoom(this.roomSlug);
     }
 
     return undefined;
@@ -70,7 +78,9 @@ class Client {
 
       if (room.isEmpty()) {
         console.log(`${room.slug} is empty, deleting...`);
-        await DIContainer.roomService.deleteRoom(room.id);
+        if (this.roomService) {
+          await this.roomService.deleteRoom(room.id);
+        }
       }
 
       this.roomSlug = null;
@@ -80,8 +90,10 @@ class Client {
   }
 
   public async sendListOfRooms(): Promise<void> {
-    const rooms = await DIContainer.roomService.getAllRooms();
-    DIContainer.socketIO.to(this.socket.id).emit('global:roomList', rooms);
+    if (this.roomService && this.io) {
+      const rooms = await this.roomService.getAllRooms();
+      this.io.to(this.socket.id).emit('global:roomList', rooms);
+    }
   }
 
   public async getCurrentRoom(): Promise<Room | undefined> {
@@ -89,7 +101,10 @@ class Client {
       return undefined;
     }
 
-    return await DIContainer.roomService.getRoom(this.roomSlug);
+    if (this.roomService) {
+      return await this.roomService.getRoom(this.roomSlug);
+    }
+    return undefined;
   }
 
   public async setUsername(name: string): Promise<void> {
@@ -97,8 +112,8 @@ class Client {
     this.username = name;
     const room = await this.getCurrentRoom();
 
-    if (room) {
-      DIContainer.roomService
+    if (room && this.roomService) {
+      this.roomService
         .updateRoom(room)
         .then(room => {
           console.log(`${room.slug} updated`);
@@ -112,7 +127,7 @@ class Client {
 
   // TODO: Implement message history
   // public sendMessageHistory(): void {
-  //     DIContainer.socketIO.to(this.socket.id).emit("global:messageHistory", this.messages);
+  //     this.io.to(this.socket.id).emit("global:messageHistory", this.messages);
   // }
 }
 

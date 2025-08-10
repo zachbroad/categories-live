@@ -1,7 +1,7 @@
 import fs from 'fs';
 import _ from 'lodash';
-import ScoreStrategyOpenAI from './ScoreStrategyOpenAI';
 import Client from './Client';
+import { Scorers } from './OpenAIScorer';
 
 class Game {
   public rounds: number;
@@ -20,15 +20,10 @@ class Game {
   // Timer
   static readonly LOBBY_DURATION = 3;
   static readonly NUMBER_OF_ROUNDS = 3;
-  static readonly RESULTS_DURATION = 60;
-  static readonly ROUND_DURATION = 6;
+  static readonly RESULTS_DURATION = 20;
+  static readonly ROUND_DURATION = 60;
   static readonly WAIT_FOR_ANSWERS_DURATION = 3.5;
-  static readonly SCORE_STRATEGIES = {
-    STRICT_GPT4o: new ScoreStrategyOpenAI('gpt-4o', 'strict'),
-    LENIENT_GPT4o: new ScoreStrategyOpenAI('gpt-4o', 'lenient'),
-    STRICT_GPT4o_Mini: new ScoreStrategyOpenAI('gpt-4o-mini', 'strict'),
-    LENIENT_GPT4o_Mini: new ScoreStrategyOpenAI('gpt-4o-mini', 'lenient')
-  };
+  static readonly SCORE_STRATEGIES = Scorers;
 
   // Scattergories letters
   static readonly DICE_LETTERS = [

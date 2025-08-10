@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import fastify from 'fastify';
 import { Server, Socket } from 'socket.io';
+import { createAdapter } from '@socket.io/postgres-adapter';
 import Logger from './Logger';
 import {
   ClientToServerEvents,
@@ -8,26 +9,28 @@ import {
   InterServerEvents,
   SocketData
 } from './SocketIO';
-import { ddb } from './DynamoDB';
+import { pool, testConnection } from './Database';
 import { MOTD, SERVER_HOST, SERVER_PORT } from './Config';
-import { createAdapter } from '@socket.io/aws-sqs-adapter';
-import { SNS } from '@aws-sdk/client-sns';
-import { SQS } from '@aws-sdk/client-sqs';
-import DIContainer from './DIContainer';
 import cors from '@fastify/cors';
 import Client from './Client';
 import Room from './Room';
 import assert from 'assert';
 import ChatMessage from './ChatMessage';
+import { initializeContainer, getContainer } from './container';
 
-const snsClient = new SNS();
-const sqsClient = new SQS({
-  region: 'us-east-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
-});
+// Test database connection
+await testConnection();
+
+const DEBUG = process.env.DEBUG === 'true';
+if (DEBUG) {
+  console.log('[DEBUG] Debug mode enabled');
+  console.log('[DEBUG] Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    SERVER_HOST,
+    SERVER_PORT,
+    DATABASE_URL: process.env.DATABASE_URL ? 'configured' : 'not configured'
+  });
+}
 
 const app = fastify();
 await app.register(cors, {
@@ -37,49 +40,82 @@ await app.register(cors, {
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(
   app.server,
   {
-    adapter: createAdapter(snsClient, sqsClient),
     cors: {
       origin: '*' // TODO: change this for production
     }
   }
 );
 
-await io.of('/').adapter.init();
+// Use PostgreSQL adapter for horizontal scaling
+io.adapter(createAdapter(pool));
 
-// Removes the Queue from SQS when the server is terminated
 process.on('SIGTERM', () => {
   io.close();
+  pool.end();
 });
 
 process.on('SIGINT', async () => {
   await io.close();
+  await pool.end();
   process.exit(0);
 });
 
-DIContainer.initialize(ddb);
-DIContainer.setSocketIO(io);
+// Initialize dependency injection container
+const container = initializeContainer(io, pool);
+
+// Get services from container
+const clientService = container.resolve('clientService');
+const roomService = container.resolve('roomService');
 
 io.on('connection', (socket: Socket) => {
   console.log('Connection: ', socket.id);
+  if (DEBUG) {
+    console.log('[DEBUG] Connection details:', {
+      socketId: socket.id,
+      address: socket.handshake.address,
+      headers: socket.handshake.headers,
+      query: socket.handshake.query,
+      transport: socket.conn.transport.name,
+      time: new Date().toISOString()
+    });
+  }
   socket.emit('message', MOTD);
 
   const name = socket.handshake.query.name as string; // TODO: define this query as a type
   const client = new Client(socket, name, socket.handshake.address);
-  DIContainer.clientService.createClient(client);
+  client.setDependencies(roomService, io);
+  clientService.createClient(client);
 
   client.message('Welcome to the server!');
   // client.sendMessageHistory();
   // client.sendListOfRooms();
 
-  socket.on('disconnect', () => {
-    DIContainer.clientService.deleteClient(client.id);
+  socket.on('disconnect', (reason) => {
+    if (DEBUG) {
+      console.log('[DEBUG] Client disconnected:', {
+        clientId: client.id,
+        username: client.username,
+        reason,
+        roomSlug: client.roomSlug,
+        time: new Date().toISOString()
+      });
+    }
+    clientService.deleteClient(client.id);
   });
 
   socket.on('global:message', (message: string) => {
     client.message(message);
   });
 
-  socket.on('global:roomList', () => {
+  socket.on('global:roomList', async () => {
+    if (DEBUG) {
+      const rooms = await roomService.getAllRooms();
+      console.log('[DEBUG] global:roomList requested:', {
+        clientId: client.id,
+        roomCount: rooms.length,
+        rooms: rooms.map(r => ({ slug: r.slug, clients: r.clients.length }))
+      });
+    }
     client.sendListOfRooms();
   });
 
@@ -90,8 +126,8 @@ io.on('connection', (socket: Socket) => {
       .getRoom()
       .then(room => {
         if (room) {
-          DIContainer.clientService.updateClient(client);
-          DIContainer.roomService.updateRoom(room);
+          clientService.updateClient(client);
+          roomService.updateRoom(room);
         }
       })
       .catch(error => {
@@ -102,6 +138,14 @@ io.on('connection', (socket: Socket) => {
 
   socket.on('room:create', async (slug: string) => {
     console.log(`${client.username} is creating a room with the slug ${slug}`);
+    if (DEBUG) {
+      console.log('[DEBUG] room:create event:', {
+        clientId: client.id,
+        username: client.username,
+        slug,
+        time: new Date().toISOString()
+      });
+    }
 
     if (!slug) {
       client.error('Slug is required');
@@ -113,12 +157,12 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    if (await DIContainer.roomService.getRoom(slug)) {
+    if (await roomService.getRoom(slug)) {
       client.error('Room with this slug already exists');
       return;
     }
 
-    const room = await DIContainer.roomService.createRoom(slug, 10, client);
+    const room = await roomService.createRoom(slug, 10, client);
     let [success, error] = room.addClient(client);
     if (!success) {
       client.error(error || 'Unknown error while adding client to room');
@@ -140,8 +184,18 @@ io.on('connection', (socket: Socket) => {
   });
 
   socket.on('room:join', async (slug: string) => {
-    let room = await DIContainer.roomService.getRoom(slug);
+    let room = await roomService.getRoom(slug);
     console.log(`${client} wants to join ${room}`);
+    if (DEBUG) {
+      console.log('[DEBUG] room:join event:', {
+        clientId: client.id,
+        username: client.username,
+        slug,
+        roomExists: !!room,
+        roomClients: room?.clients.length || 0,
+        time: new Date().toISOString()
+      });
+    }
 
     if (!room) {
       client.error('You tried to join a room that does not exist!');
@@ -167,12 +221,21 @@ io.on('connection', (socket: Socket) => {
   });
 
   socket.on('room:chatMessage', async (message: string) => {
+    if (DEBUG) {
+      console.log('[DEBUG] room:chatMessage event:', {
+        clientId: client.id,
+        username: client.username,
+        roomSlug: client.roomSlug,
+        messageLength: message.length,
+        time: new Date().toISOString()
+      });
+    }
     if (!client.roomSlug) {
       client.error('You must be in a room to send chat messages!');
       return;
     }
 
-    const room = await DIContainer.roomService.getRoom(client.roomSlug);
+    const room = await roomService.getRoom(client.roomSlug);
     if (!room) {
       client.error(`Room ${client.roomSlug} not found!`);
       return;
@@ -185,7 +248,7 @@ io.on('connection', (socket: Socket) => {
     };
 
     room.chat = room.chat.concat(chatMessage);
-    DIContainer.socketIO.sockets.in(room.slug).emit('room:chatMessage', chatMessage);
+    io.sockets.in(room.slug).emit('room:chatMessage', chatMessage);
   });
 
   socket.on('room:startGame', async (data: { slug: string }) => {
@@ -195,13 +258,24 @@ io.on('connection', (socket: Socket) => {
     const { slug } = data;
 
     console.log(`${client.username} requested to start a game`);
+    if (DEBUG) {
+      const room = await roomService.getRoom(slug);
+      console.log('[DEBUG] room:startGame event:', {
+        clientId: client.id,
+        username: client.username,
+        slug,
+        roomClients: room?.clients.length || 0,
+        gameState: room?.state || 'unknown',
+        time: new Date().toISOString()
+      });
+    }
     if (!slug) {
       client.error('You must be in a room to start a game!');
       return;
     }
 
     // Get the room by slug
-    const room = await DIContainer.roomService.getRoom(slug);
+    const room = await roomService.getRoom(slug);
     if (!room) {
       console.error(`Tried to start game for room ${slug} but couldn't find room!`);
       client.error('Room not found!');
@@ -225,7 +299,16 @@ io.on('connection', (socket: Socket) => {
     assert(data.answers.length > 0, 'Answers must contain at least one answer');
 
     const { slug, answers } = data;
-    const room = await DIContainer.roomService.getRoom(slug);
+    if (DEBUG) {
+      console.log('[DEBUG] room:provideAnswers event:', {
+        clientId: client.id,
+        username: client.username,
+        slug,
+        answerCount: answers.length,
+        time: new Date().toISOString()
+      });
+    }
+    const room = await roomService.getRoom(slug);
 
     // Make sure room exists
     if (!room) {
@@ -270,7 +353,16 @@ io.on('connection', (socket: Socket) => {
     assert(data.slug, 'Slug is required');
 
     const { slug } = data;
-    const room = await DIContainer.roomService.getRoom(slug);
+    const room = await roomService.getRoom(slug);
+    if (DEBUG) {
+      console.log('[DEBUG] room:leave event:', {
+        clientId: client.id,
+        username: client.username,
+        slug,
+        roomExists: !!room,
+        time: new Date().toISOString()
+      });
+    }
 
     // Make sure room exists
     if (!room) {
@@ -293,8 +385,16 @@ io.on('connection', (socket: Socket) => {
     assert(data.room.slug, 'Room slug is required');
 
     const { slug } = data.room;
+    if (DEBUG) {
+      console.log('[DEBUG] room:voteGoToLobby event:', {
+        clientId: client.id,
+        username: client.username,
+        slug,
+        time: new Date().toISOString()
+      });
+    }
 
-    const room = await DIContainer.roomService.getRoom(slug);
+    const room = await roomService.getRoom(slug);
     if (!room) {
       console.error(`${client} tried to go to lobby on room ${slug} but it doesn't exist!`);
       return;
@@ -319,18 +419,25 @@ io.on('connection', (socket: Socket) => {
 
   socket.on('room:singlePlayer', async () => {
     console.log(`${client} wants to start a single player game.`);
-    const room = Room.createSinglePlayerRoom(client);
+    if (DEBUG) {
+      console.log('[DEBUG] room:singlePlayer event:', {
+        clientId: client.id,
+        username: client.username,
+        time: new Date().toISOString()
+      });
+    }
+    const room = Room.createSinglePlayerRoom(client, io);
     room.name = 'Single Player Room';
     room.slug = 'single-player';
 
     // add random number to name but make sure unique
-    while (await DIContainer.roomService.getRoom(room.slug)) {
+    while (await roomService.getRoom(room.slug)) {
       room.slug += Math.floor(Math.random() * 1000000);
     }
 
     console.log(`Created single player room ${room.slug}`);
 
-    await DIContainer.roomService.createRoom(room.slug, 1, client);
+    await roomService.createRoom(room.slug, 1, client);
 
     // TODO: DRY this
     let [joined, message] = room.addClient(client);
@@ -352,9 +459,18 @@ io.on('connection', (socket: Socket) => {
 
   socket.on('room:joinRandomRoom', async () => {
     console.log(`${client.username} is joining a random room`);
+    if (DEBUG) {
+      const rooms = await roomService.getAllRooms();
+      console.log('[DEBUG] room:joinRandomRoom event:', {
+        clientId: client.id,
+        username: client.username,
+        availableRooms: rooms.length,
+        time: new Date().toISOString()
+      });
+    }
 
     // Make sure there are rooms to join
-    const rooms = await DIContainer.roomService.getAllRooms();
+    const rooms = await roomService.getAllRooms();
     if (rooms.length === 0) {
       io.to(socket.id).emit('error', `There are no rooms to join!`);
       return;

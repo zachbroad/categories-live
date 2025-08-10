@@ -1,14 +1,14 @@
-import { v4 as uuidv4 } from 'uuid';
-import Client from './Client';
-import RoomStatus from './RoomStatus';
-import ChatMessage from './ChatMessage';
-import Game from './Game';
-import DIContainer from './DIContainer';
-import ScorerOpenAI from './ScorerOpenAI';
 import slugify from 'slugify';
+import { Server } from 'socket.io';
+import { v4 as uuidv4 } from 'uuid';
+import ChatMessage from './ChatMessage';
+import Client from './Client';
+import Game from './Game';
+import RoomStatus from './RoomStatus';
+import OpenAIScorer from './OpenAIScorer';
 
 class Room {
-  public id: UUID;
+  public id: string;
   public name: string;
   public slug: string;
   public capacity: number;
@@ -21,12 +21,14 @@ class Room {
   public isPublic: boolean;
   public currentRound: number;
   public game: Game | null;
+  private io?: Server;
 
   constructor(
     name: string,
     capacity: number = 10,
     owner: Client | null = null,
-    isPublic: boolean = true
+    isPublic: boolean = true,
+    io?: Server | null
   ) {
     this.id = uuidv4();
     this.name = name;
@@ -39,6 +41,9 @@ class Room {
     this.scores = {};
     this.clickedOkResults = {};
     this.game = null;
+    if (io) {
+      this.io = io;
+    }
     this.setUpNewGame();
 
     this.isPublic = isPublic;
@@ -67,12 +72,16 @@ class Room {
     return `${this.slug} - (${this.clients.length} / ${this.capacity})`;
   }
 
-  public static createSinglePlayerRoom(client: Client): Room {
-    const room = new Room(client.username, 1, client, false);
+  public static createSinglePlayerRoom(client: Client, io?: Server): Room {
+    const room = new Room(client.username, 1, client, false, io);
     room.isPublic = false;
     room.owner = client;
     room.startGame();
     return room;
+  }
+
+  public setIO(io: Server): void {
+    this.io = io;
   }
 
   public setUpNewGame(): void {
@@ -178,11 +187,15 @@ class Room {
   }
 
   public updateRoom(): void {
-    DIContainer.socketIO.to(this.slug).emit('room:data', this.toJSON());
+    if (this.io) {
+      this.io.to(this.slug).emit('room:data', this.toJSON());
+    }
   }
 
   public sendToAllClients(msg: string, data: any): void {
-    DIContainer.socketIO.to(this.slug).emit(msg, data);
+    if (this.io) {
+      this.io.to(this.slug).emit(msg, data);
+    }
   }
 
   public alertToAllClients(msg: string): void {
@@ -226,7 +239,7 @@ class Room {
     // Start all the score calculations concurrently and wait for them to finish
     const scoreCalculations = await Promise.all(
       this.clients.map(client => {
-        const scorer = new ScorerOpenAI('gpt-4o-mini', 'strict');
+        const scorer = new OpenAIScorer('gpt-4o-mini', 'strict');
         return scorer.scoreGame(
           this.game!.letter,
           this.game!.currentPrompts,
@@ -263,7 +276,9 @@ class Room {
     this.updateRoom();
 
     // Send results
-    DIContainer.socketIO.to(this.slug).emit('room:results', this.game!.results);
+    if (this.io) {
+      this.io.to(this.slug).emit('room:results', this.game!.results);
+    }
 
     // Show the results for a bit before returning to the lobby
     setTimeout(() => {

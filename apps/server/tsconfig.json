@@ -11,7 +11,11 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": false,
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@categories/server/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*", "types.d.ts"],
   "exclude": ["node_modules"]

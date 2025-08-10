@@ -9,7 +9,7 @@ class ClientRepositoryMemory implements IClientRepository {
     return client;
   }
 
-  public async getClient(id: UUID): Promise<Client | undefined> {
+  public async getClient(id: string): Promise<Client | undefined> {
     return this.clients.get(id);
   }
 
@@ -18,7 +18,7 @@ class ClientRepositoryMemory implements IClientRepository {
     return client;
   }
 
-  public async deleteClient(id: UUID): Promise<boolean> {
+  public async deleteClient(id: string): Promise<boolean> {
     return this.clients.delete(id);
   }
 

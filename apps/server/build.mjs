@@ -1,6 +1,7 @@
 import * as esbuild from 'esbuild';
 import { promises as fs } from 'fs';
 import path from 'path';
+import esbuildPluginTsc from 'esbuild-plugin-tsc';
 
 async function build() {
   // Clean dist directory
@@ -18,12 +19,17 @@ async function build() {
     sourcemap: true,
     minify: false,
     logLevel: 'info',
+    plugins: [
+      esbuildPluginTsc({
+        tsconfigPath: './tsconfig.json'
+      })
+    ]
   });
 
   console.log('Build completed!');
 }
 
-build().catch((err) => {
+build().catch(err => {
   console.error(err);
   process.exit(1);
 });

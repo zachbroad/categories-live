@@ -1,0 +1,9 @@
+{
+  "migrationsTable": "pgmigrations",
+  "migrationsDir": "migrations",
+  "dir": "migrations",
+  "checkOrder": true,
+  "migrationFile": {
+    "language": "sql"
+  }
+}

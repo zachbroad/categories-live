@@ -1,16 +1,34 @@
 import Room from './Room';
 import Client from './Client';
 import IRoomRepository from './IRoomRepository';
+import { Server } from 'socket.io';
+
+interface RoomServiceDependencies {
+  roomRepository: IRoomRepository;
+  io: Server;
+}
 
 class RoomService {
-  public constructor(private readonly roomRepository: IRoomRepository) {}
+  private readonly roomRepository: IRoomRepository;
+  private readonly io: Server;
+
+  public constructor({ roomRepository, io }: RoomServiceDependencies) {
+    this.roomRepository = roomRepository;
+    this.io = io;
+  }
 
   public async createRoom(slug: string, capacity: number, owner: Client): Promise<Room> {
-    return this.roomRepository.createRoom(slug, capacity, owner);
+    const room = await this.roomRepository.createRoom(slug, capacity, owner, this.io);
+    room.setIO(this.io);
+    return room;
   }
 
   public async getRoom(slug: string): Promise<Room | undefined> {
-    return this.roomRepository.getRoom(slug);
+    const room = await this.roomRepository.getRoom(slug);
+    if (room) {
+      room.setIO(this.io);
+    }
+    return room;
   }
 
   public async updateRoom(room: Room): Promise<Room> {
@@ -22,7 +40,9 @@ class RoomService {
   }
 
   public async getAllRooms(): Promise<Room[]> {
-    return this.roomRepository.getAllRooms(); // TODO: handle private/public rooms
+    const rooms = await this.roomRepository.getAllRooms();
+    rooms.forEach(room => room.setIO(this.io));
+    return rooms;
   }
 }
 

@@ -1,7 +1,7 @@
 enum RoomStatus {
   Waiting = 'Waiting',
   Starting = 'Starting',
-  InProgress = 'In Progress',
+  InProgress = 'InProgress',
   Scoring = 'Scoring',
   Results = 'Results'
 }
