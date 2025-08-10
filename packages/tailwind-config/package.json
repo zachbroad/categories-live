@@ -8,8 +8,6 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
-    "tailwindcss": "^3.4.15",
-    "tailwindcss-animate": "^1.0.7"
+    "@repo/typescript-config": "workspace:*"
   }
 }

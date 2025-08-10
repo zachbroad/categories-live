@@ -7,8 +7,6 @@ import AutoImport from 'unplugin-auto-import/vite';
 import checker from 'vite-plugin-checker';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-import tailwindcss from 'tailwindcss';
-
 export default ({
   env: { isSsrBuild = false, mode },
   ssrInput = '',
@@ -34,7 +32,7 @@ export default ({
     },
     css: {
       postcss: {
-        plugins: [tailwindcss, autoprefixer]
+        plugins: [autoprefixer]
       },
       preprocessorOptions: {
         scss: {

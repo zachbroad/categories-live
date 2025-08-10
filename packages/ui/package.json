@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./styles.scss": "./src/styles/main.scss",
+    "./styles": "./src/styles/ui.css",
     "./button": "./src/components/ui/button.tsx",
     "./utils": "./src/lib/utils.ts"
   },
   "scripts": {
-    "shadcn": "pnpm dlx shadcn@latest",
+    "shadcn": "pnpm dlx shadcn@canary",
     "lint": "run-s eslint stylelint",
     "eslint": "eslint '**/*.{js,ts,jsx,tsx}' --fix",
     "stylelint": "stylelint '**/*.{css,scss}' --fix",
@@ -41,7 +41,6 @@
     "react-docgen-typescript": "^2.2.2",
     "sass": "^1.81.0",
     "storybook": "^8.4.6",
-    "tailwindcss": "^3.4.15",
     "unplugin-auto-import": "^0.18.6",
     "vite": "^5.4.11"
   },

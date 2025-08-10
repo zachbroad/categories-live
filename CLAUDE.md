@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Categories.LIVE is a Turborepo monorepo containing a real-time multiplayer game with a React Router v7 web client and a Node.js/Socket.IO game server.
 
+## Tech Stack
+
+- **Tailwind CSS v4** with @tailwindcss/vite plugin for styling
+- **React Router v7** for the web application framework
+- **Socket.IO** for real-time game server
+- **Turborepo** for monorepo management
+
 ## Key Commands
 
 ### Development

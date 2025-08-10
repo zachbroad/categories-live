@@ -1,0 +1,15 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# EC2 Configuration
+# Ubuntu 22.04 LTS AMI for us-east-1
+# Find the latest AMI ID at: https://cloud-images.ubuntu.com/locator/ec2/
+ami_id = "ami-0e2c8caa4b6378d8c"
+
+# Instance types (t2.micro is free tier eligible)
+backend_instance_type  = "t2.micro"
+frontend_instance_type = "t2.micro"
+
+# Key pair name (must already exist in AWS)
+# Create one at: AWS Console > EC2 > Key Pairs
+key_pair_name = "your-key-pair-name"
