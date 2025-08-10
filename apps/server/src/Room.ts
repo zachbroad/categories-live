@@ -6,6 +6,7 @@ import Client from './Client';
 import Game from './Game';
 import RoomStatus from './RoomStatus';
 import OpenAIScorer from './OpenAIScorer';
+import { GameStateMachine, GameState } from './GameStateMachine';
 
 class Room {
   public id: string;
@@ -22,6 +23,7 @@ class Room {
   public currentRound: number;
   public game: Game | null;
   private io?: Server;
+  private stateMachine?: GameStateMachine;
 
   constructor(
     name: string,
@@ -43,6 +45,7 @@ class Room {
     this.game = null;
     if (io) {
       this.io = io;
+      this.stateMachine = new GameStateMachine(this);
     }
     this.setUpNewGame();
 
@@ -76,17 +79,21 @@ class Room {
     const room = new Room(client.username, 1, client, false, io);
     room.isPublic = false;
     room.owner = client;
-    room.startGame();
+    // Don't start game here - let main.ts handle it after state machine is ready
     return room;
   }
 
   public setIO(io: Server): void {
     this.io = io;
+    if (!this.stateMachine) {
+      this.stateMachine = new GameStateMachine(this);
+    }
   }
 
   public setUpNewGame(): void {
     this.game = Game.generateNewGame();
     this.status = RoomStatus.Waiting;
+    this.clickedOkResults = {}; // Reset ready status
     this.updateRoom();
   }
 
@@ -96,38 +103,43 @@ class Room {
       return;
     }
 
-    this.status = RoomStatus.Starting;
-    this.updateRoom();
+    if (!this.stateMachine) {
+      console.error(`${this.slug} has no state machine!`);
+      return;
+    }
 
-    console.log(`Set ${this.slug} status to Starting`);
-    console.log(`${this.slug} will start in ${Game.LOBBY_DURATION} seconds.`);
-
-    setTimeout(() => {
-      this.handleSetInProgress();
-
-      setTimeout(() => {
-        this.handleRequestAnswersAndPassToGPT();
-
-        setTimeout(async () => {
-          if (!this.game!.hasBeenScored) {
-            this.handleScoring();
-          }
-        }, 1000 * Game.WAIT_FOR_ANSWERS_DURATION);
-      }, 1000 * Game.ROUND_DURATION);
-    }, 1000 * Game.LOBBY_DURATION);
+    // Use state machine to handle game flow
+    this.stateMachine.transition(GameState.STARTING);
   }
 
-  private handleSetInProgress(): void {
-    console.log(`${this.slug} is starting...`);
-    this.status = RoomStatus.InProgress;
-    this.updateRoom();
+  public onPlayerSubmitAnswers(clientId: string, answers: string[]): void {
+    // Store the answers
+    if (this.game) {
+      this.game.results[clientId] = {
+        answers,
+        results: []
+      };
+    }
+
+    // Check if we can auto-progress
+    if (this.stateMachine) {
+      this.stateMachine.checkAutoProgress();
+    } else {
+      // Fallback to manual check
+      if (this.hasEveryoneSubmittedAnswers()) {
+        this.handleScoring();
+      }
+    }
   }
 
-  private handleRequestAnswersAndPassToGPT(): void {
-    console.log(`${this.slug} is requesting answers...`);
-    this.status = RoomStatus.Scoring;
+  public onPlayerReady(clientId: string): void {
+    this.clickedOkResults[clientId] = true;
     this.updateRoom();
-    this.requestAnswers();
+
+    // Check if we can auto-progress from results
+    if (this.stateMachine?.getCurrentState() === GameState.RESULTS) {
+      this.stateMachine.checkAutoProgress();
+    }
   }
   public addClient(client: Client): [boolean, string | null] {
     if (this.hasClient(client)) {
@@ -172,12 +184,13 @@ class Room {
       return [true, null];
     }
 
-    if (this.owner === client) {
+    if (this.owner === client && this.clients.length > 0) {
       this.setOwner(this.clients[0]);
       this.clients[0].message(`You are now the owner of ${this.name}.`);
     }
 
     this.sendToAllClients('alert', `${client.username} left the room.`);
+    this.updateRoom(); // Update room to sync owner change
 
     return [true, null];
   }
@@ -203,7 +216,13 @@ class Room {
   }
 
   public destroy(): void {
-    // Implementation will depend on your room management logic
+    // Clean up state machine timeouts
+    if (this.stateMachine) {
+      this.stateMachine.reset();
+    }
+    // Clear any remaining clients
+    this.clients = [];
+    console.log(`Room ${this.slug} destroyed`);
   }
 
   public requestAnswers(): void {
@@ -234,11 +253,24 @@ class Room {
   public async handleScoring(): Promise<void> {
     console.log(`${this.slug} is scoring...`);
 
-    this.game!.hasBeenScored = true;
+    if (!this.game) {
+      console.error(`${this.slug} has no game to score!`);
+      return;
+    }
+
+    this.game.hasBeenScored = true;
 
     // Start all the score calculations concurrently and wait for them to finish
     const scoreCalculations = await Promise.all(
       this.clients.map(client => {
+        // Check if client has submitted answers, if not use empty answers
+        if (!this.game!.results[client.id]) {
+          this.game!.results[client.id] = {
+            answers: Array(this.game!.currentPrompts.length).fill(''),
+            results: []
+          };
+        }
+        
         const scorer = new OpenAIScorer('gpt-4o-mini', 'strict');
         return scorer.scoreGame(
           this.game!.letter,
@@ -279,14 +311,9 @@ class Room {
     if (this.io) {
       this.io.to(this.slug).emit('room:results', this.game!.results);
     }
-
-    // Show the results for a bit before returning to the lobby
-    setTimeout(() => {
-      // Set to new round
-      this.status = RoomStatus.Waiting;
-      this.setUpNewGame();
-      this.updateRoom();
-    }, 1000 * Game.RESULTS_DURATION);
+    
+    // State machine will handle the transition to next state
+    // Old timer logic removed - now handled by GameStateMachine
   }
 }
 

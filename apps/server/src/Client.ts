@@ -92,7 +92,7 @@ class Client {
   public async sendListOfRooms(): Promise<void> {
     if (this.roomService && this.io) {
       const rooms = await this.roomService.getAllRooms();
-      this.io.to(this.socket.id).emit('global:roomList', rooms);
+      this.io.to(this.socket.id).emit('roomList', rooms);
     }
   }
 

@@ -1,22 +1,22 @@
+import cors from '@fastify/cors';
+import { createAdapter } from '@socket.io/postgres-adapter';
+import assert from 'assert';
 import 'dotenv/config';
 import fastify from 'fastify';
 import { Server, Socket } from 'socket.io';
-import { createAdapter } from '@socket.io/postgres-adapter';
+import ChatMessage from './ChatMessage';
+import Client from './Client';
+import { MOTD, SERVER_HOST, SERVER_PORT } from './Config';
+import { initializeContainer } from './container';
+import { pool, testConnection } from './Database';
 import Logger from './Logger';
+import Room from './Room';
 import {
   ClientToServerEvents,
-  ServerToClientEvents,
   InterServerEvents,
+  ServerToClientEvents,
   SocketData
 } from './SocketIO';
-import { pool, testConnection } from './Database';
-import { MOTD, SERVER_HOST, SERVER_PORT } from './Config';
-import cors from '@fastify/cors';
-import Client from './Client';
-import Room from './Room';
-import assert from 'assert';
-import ChatMessage from './ChatMessage';
-import { initializeContainer, getContainer } from './container';
 
 // Test database connection
 await testConnection();
@@ -88,7 +88,7 @@ io.on('connection', (socket: Socket) => {
 
   client.message('Welcome to the server!');
   // client.sendMessageHistory();
-  // client.sendListOfRooms();
+  client.sendListOfRooms();
 
   socket.on('disconnect', (reason) => {
     if (DEBUG) {
@@ -324,28 +324,16 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    // TODO: Fix this
-    // // Make sure client hasn't already provided answers
-    // if (client.id in room.game.results) {
-    //   console.error(`${client} tried to provide answers for room ${slug} but they've already provided answers!`);
-    //   return;
-    // }
-
-    // Store answers
-    room.game!.results[client.id] = {};
-    room.game!.results[client.id].answers = answers;
-    room.game!.results[client.id].results = [];
-
-    // Check if everyone has provided answers
-    if (room.hasEveryoneSubmittedAnswers()) {
-      // Everyone is done, score the game
-      console.log('Everyone is done, scoring game...');
-
-      await room.handleScoring();
-    } else {
-      // Not everyone is done, update room
-      room.updateRoom();
+    // Make sure client hasn't already provided answers
+    if (room.game && client.id in room.game.results && room.game.results[client.id].answers.length > 0) {
+      console.error(`${client} tried to provide answers for room ${slug} but they've already provided answers!`);
+      client.error('You have already submitted answers for this round');
+      return;
     }
+
+    // Use the new method that handles auto-progression
+    room.onPlayerSubmitAnswers(client.id, answers);
+    room.updateRoom();
   });
 
   socket.on('room:leave', async (data: { slug: string }) => {
@@ -408,13 +396,8 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    room.clickedOkResults[client.id] = true;
-    room.updateRoom();
-
-    // Check if everyone is ready to go to lobby and start new game if so
-    if (room.isEveryoneReadyToGoToLobby()) {
-      room.setUpNewGame();
-    }
+    // Use the new method that handles auto-progression
+    room.onPlayerReady(client.id);
   });
 
   socket.on('room:singlePlayer', async () => {
@@ -426,20 +409,17 @@ io.on('connection', (socket: Socket) => {
         time: new Date().toISOString()
       });
     }
-    const room = Room.createSinglePlayerRoom(client, io);
-    room.name = 'Single Player Room';
-    room.slug = 'single-player';
 
-    // add random number to name but make sure unique
-    while (await roomService.getRoom(room.slug)) {
-      room.slug += Math.floor(Math.random() * 1000000);
-    }
+    // Generate unique slug for single player room
+    const slug = `single-player-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create room through service (this handles everything)
+    const room = await roomService.createRoom(slug, 1, client);
+    room.name = 'Single Player Room';
 
     console.log(`Created single player room ${room.slug}`);
 
-    await roomService.createRoom(room.slug, 1, client);
-
-    // TODO: DRY this
+    // Add client to room
     let [joined, message] = room.addClient(client);
 
     if (joined) {
@@ -450,6 +430,9 @@ io.on('connection', (socket: Socket) => {
       console.log(`${client} joined ${room}.`);
       client.send('room:data', room);
       client.message('Room created.');
+
+      // Start the game for single player
+      room.startGame();
     } else {
       // Failed to join room, send error msg
       console.log(`${client} failed to join ${room} - ${message}.`);

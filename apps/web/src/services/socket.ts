@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 import { useGameStore } from '../store/gameStore';
-import type { TypedSocket } from '../types/socket';
+import type { Room, TypedSocket } from '../types/socket';
 
 const SOCKET_URL =
   typeof window !== 'undefined'
@@ -83,7 +83,7 @@ class SocketService {
       store.updateRoomChat(message);
     });
 
-    this.socket.on('roomList', rooms => {
+    this.socket.on('roomList', (rooms: Room[]) => {
       console.log('Room list:', rooms);
       store.setAvailableRooms(rooms);
     });
