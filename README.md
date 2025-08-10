@@ -42,7 +42,6 @@ This Turborepo has some additional tools already setup for you:
 - [Husky](https://typicode.github.io/husky/) for Git hooks
 - [Lint-staged](https://github.com/okonet/lint-staged) for running linters on Git staged files
 - [Commitlint](https://commitlint.js.org/) for commit message linting
-- [Netlify](https://www.netlify.com/) for deployment
 - [Shadcn UI](https://ui.shadcn.com/) for UI components
 - [Vitest](https://vitest.dev/) for testing
 - [Storybook](https://storybook.js.org/) for UI development, documentation and testing

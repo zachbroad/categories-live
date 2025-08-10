@@ -1,0 +1,41 @@
+{
+  "name": "scatterserver-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx tsx ./src/main.ts",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.687.0",
+    "@aws-sdk/client-sns": "^3.693.0",
+    "@aws-sdk/client-sqs": "^3.693.0",
+    "@fastify/cors": "^10.0.1",
+    "@socket.io/aws-sqs-adapter": "^0.1.1",
+    "@types/lodash": "^4.17.13",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.1.0",
+    "lodash": "^4.17.21",
+    "openai": "^4.71.1",
+    "slugify": "^1.6.6",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@types/node": "^22.9.0",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.14.0"
+  }
+}
