@@ -1,0 +1,13 @@
+{
+  "extends": "@repo/typescript-config/react",
+  "compilerOptions": {
+    "types": ["react", "storybook"],
+    "rootDirs": ["."],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [".", ".storybook/*"],
+  "exclude": ["node_modules", ".turbo"]
+}
