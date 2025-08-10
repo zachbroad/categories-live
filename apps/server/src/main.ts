@@ -1,24 +1,24 @@
 import 'dotenv/config';
 import fastify from 'fastify';
 import { Server, Socket } from 'socket.io';
-import Logger from './Logger.js';
+import Logger from './Logger';
 import {
   ClientToServerEvents,
   ServerToClientEvents,
   InterServerEvents,
   SocketData
-} from './SocketIO.js';
-import { ddb } from './DynamoDB.js';
-import { MOTD, SERVER_HOST, SERVER_PORT } from './Config.js';
+} from './SocketIO';
+import { ddb } from './DynamoDB';
+import { MOTD, SERVER_HOST, SERVER_PORT } from './Config';
 import { createAdapter } from '@socket.io/aws-sqs-adapter';
 import { SNS } from '@aws-sdk/client-sns';
 import { SQS } from '@aws-sdk/client-sqs';
-import DIContainer from './DIContainer.js';
+import DIContainer from './DIContainer';
 import cors from '@fastify/cors';
-import Client from './Client.js';
-import Room from './Room.js';
+import Client from './Client';
+import Room from './Room';
 import assert from 'assert';
-import ChatMessage from './ChatMessage.js';
+import ChatMessage from './ChatMessage';
 
 const snsClient = new SNS();
 const sqsClient = new SQS({

@@ -1,9 +1,9 @@
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
-import ClientService from './ClientService.js';
-import RoomService from './RoomService.js';
+import ClientService from './ClientService';
+import RoomService from './RoomService';
 import { Server } from 'socket.io';
-import ClientRepositoryMemory from './ClientRepositoryMemory.js';
-import RoomRepositoryMemory from './RoomRepositoryMemory.js';
+import ClientRepositoryMemory from './ClientRepositoryMemory';
+import RoomRepositoryMemory from './RoomRepositoryMemory';
 
 export class Container {
   private static instance: Container;

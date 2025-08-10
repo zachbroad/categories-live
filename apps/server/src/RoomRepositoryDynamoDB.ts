@@ -6,8 +6,8 @@ import {
   ScanCommand,
   DynamoDB
 } from '@aws-sdk/client-dynamodb';
-import Room from './Room.js';
-import Client from './Client.js';
+import Room from './Room';
+import Client from './Client';
 
 class RoomRepositoryDynamoDB {
   constructor(

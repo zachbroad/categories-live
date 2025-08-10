@@ -1,6 +1,6 @@
 import { Socket } from 'socket.io';
-import Room from './Room.js';
-import DIContainer from './DIContainer.js';
+import Room from './Room';
+import DIContainer from './DIContainer';
 
 class Client {
   public id: string;

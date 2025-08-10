@@ -1,7 +1,7 @@
 import fs from 'fs';
 import _ from 'lodash';
-import ScoreStrategyOpenAI from './ScoreStrategyOpenAI.js';
-import Client from './Client.js';
+import ScoreStrategyOpenAI from './ScoreStrategyOpenAI';
+import Client from './Client';
 
 class Game {
   public rounds: number;

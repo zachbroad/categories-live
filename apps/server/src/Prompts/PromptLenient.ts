@@ -1,4 +1,4 @@
-import PromptBase from './PromptBase.js';
+import PromptBase from './PromptBase';
 
 const PromptLenient = `${PromptBase}
 

@@ -1,5 +1,5 @@
-import Client from '../Client.js';
-import { AbstractSocketHandler } from './AbstractSocketHandler.js';
+import Client from '../Client';
+import { AbstractSocketHandler } from './AbstractSocketHandler';
 
 class GlobalDisconnect extends AbstractSocketHandler {
   public static event = 'disconnect';

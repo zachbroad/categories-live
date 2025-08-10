@@ -1,5 +1,5 @@
-import IClientRepository from './IClientRepository.js';
-import Client from './Client.js';
+import IClientRepository from './IClientRepository';
+import Client from './Client';
 
 class ClientRepositoryMemory implements IClientRepository {
   private clients: Map<string, Client> = new Map();

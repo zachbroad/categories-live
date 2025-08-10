@@ -1,6 +1,6 @@
-import Room from './Room.js';
-import Client from './Client.js';
-import IRoomRepository from './IRoomRepository.js';
+import Room from './Room';
+import Client from './Client';
+import IRoomRepository from './IRoomRepository';
 
 class RoomRepositoryMemory implements IRoomRepository {
   private rooms: Map<string, Room>;

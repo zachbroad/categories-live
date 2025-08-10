@@ -1,5 +1,5 @@
-import DIContainer from '../DIContainer.js';
-import { AbstractSocketHandler } from './AbstractSocketHandler.js';
+import DIContainer from '../DIContainer';
+import { AbstractSocketHandler } from './AbstractSocketHandler';
 
 class GlobalRoomList extends AbstractSocketHandler {
   public static event = 'globalRoomList';

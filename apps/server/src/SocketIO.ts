@@ -1,5 +1,5 @@
 import { UUID } from 'crypto';
-import Room from './Room.js';
+import Room from './Room';
 
 export interface ClientToServerEvents {
   connection: () => void;

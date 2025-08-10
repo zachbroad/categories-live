@@ -1,5 +1,5 @@
-import IScorer from './IScorer.js';
-import PROMPT_MAP from './Prompts/PromptMap.js';
+import IScorer from './IScorer';
+import PROMPT_MAP from './Prompts/PromptMap';
 
 class BaseScorer implements IScorer {
   private prompt: string;

@@ -1,10 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
-import Client from './Client.js';
-import RoomStatus from './RoomStatus.js';
-import ChatMessage from './ChatMessage.js';
-import Game from './Game.js';
-import DIContainer from './DIContainer.js';
-import ScorerOpenAI from './ScorerOpenAI.js';
+import Client from './Client';
+import RoomStatus from './RoomStatus';
+import ChatMessage from './ChatMessage';
+import Game from './Game';
+import DIContainer from './DIContainer';
+import ScorerOpenAI from './ScorerOpenAI';
 import slugify from 'slugify';
 
 class Room {
@@ -30,7 +30,7 @@ class Room {
   ) {
     this.id = uuidv4();
     this.name = name;
-    this.slug = slugify.default(name, { lower: true });
+    this.slug = slugify(name, { lower: true });
     this.capacity = capacity;
     this.status = RoomStatus.Waiting;
     this.clients = [];

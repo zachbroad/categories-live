@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
-import IScorer from './IScorer.js';
-import BaseScorer from './BaseScorer.js';
+import IScorer from './IScorer';
+import BaseScorer from './BaseScorer';
 
 class ScorerOpenAI extends BaseScorer implements IScorer {
   constructor(
