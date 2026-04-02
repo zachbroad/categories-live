@@ -1,47 +1,72 @@
-# `Turborepo` React Router v7 starter
+# Categories.LIVE
 
-A Turborepo starter template for a React Router v7 application.
+Real-time multiplayer word game built with React, Socket.IO, and GPT-4.
 
-## Using this template
+Players join rooms, receive a category, and race to submit answers. Responses are scored in real time using OpenAI, and results are displayed live to all participants.
 
-Run the following command:
+## Features
+
+- Real-time multiplayer gameplay with Socket.IO rooms and live chat
+- AI-powered answer scoring via OpenAI (GPT-4)
+- Game state machine managing lobby, active rounds, scoring, and results
+- Responsive React client with Zustand state management
+- Horizontally scalable server with PostgreSQL-backed adapters and Terraform infrastructure
+
+## Tech Stack
+
+**Client:** React 18, React Router v7 (SSR), Tailwind CSS v4, Zustand, Socket.IO Client, Vite
+
+**Server:** Node.js, Fastify, Socket.IO, OpenAI SDK, PostgreSQL, Awilix (DI), Zod
+
+**Infrastructure:** Turborepo, pnpm workspaces, Docker, Terraform (AWS), Netlify
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 20.10
+- pnpm 9.x
+
+### Install
 
 ```sh
-pnpm dlx create-turbo@latest -e https://github.com/thedammyking/turborepo-react-router-v7-starter
+pnpm install
 ```
-You can use other package managers like `npm` and `yarn` or just clone the repo and install the dependencies.
 
-## What's inside?
+### Development
 
-This Turborepo includes the following packages and apps:
+```sh
+# Start all apps (web client + game server)
+pnpm dev
 
-### Apps and Packages
+# Or run individually
+pnpm --filter=@categories/web dev
+pnpm --filter=@categories/server dev
+```
 
-- `docs`: a [React Router](https://reactrouter.com/) app
-- `web`: another [React Router](https://reactrouter.com/) app
-- `@repo/ui`: a stub component & utility library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: shared `eslint` configurations
-- `@repo/typescript-config`: shared `tsconfig.json` used throughout the monorepo
-- `@repo/prettier-config`: shared `prettier` configuration
-- `@repo/stylelint-config`: shared `stylelint` configuration
-- `@repo/tailwind-config`: shared Tailwind CSS configuration
-- `@repo/vite-config`: shared Vite configuration
+The server requires environment variables for PostgreSQL and OpenAI. Copy `.env.example` (if available) or configure:
 
-Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
+- `DATABASE_URL` -- PostgreSQL connection string
+- `OPENAI_API_KEY` -- OpenAI API key for answer scoring
 
-### Utilities
+### Build
 
-This Turborepo has some additional tools already setup for you:
+```sh
+pnpm build
+```
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-- [Stylelint](https://stylelint.io/) for CSS linting
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- [Sass](https://sass-lang.com/) for CSS pre-processing
-- [Husky](https://typicode.github.io/husky/) for Git hooks
-- [Lint-staged](https://github.com/okonet/lint-staged) for running linters on Git staged files
-- [Commitlint](https://commitlint.js.org/) for commit message linting
-- [Shadcn UI](https://ui.shadcn.com/) for UI components
-- [Vitest](https://vitest.dev/) for testing
-- [Storybook](https://storybook.js.org/) for UI development, documentation and testing
+## Project Structure
+
+```
+apps/
+  web/       React Router v7 client (Netlify deployment)
+  server/    Socket.IO game server (Docker deployment)
+packages/
+  ui/        Shared component library (Shadcn UI)
+  *-config/  Shared ESLint, TypeScript, Prettier, Tailwind, Vite configs
+infra/       Terraform configuration for AWS
+```
+
+## License
+
+MIT
