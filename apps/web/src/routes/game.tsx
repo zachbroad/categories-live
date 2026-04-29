@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
+
 import InProgress from '@/components/game/InProgress';
 import Lobby from '@/components/game/Lobby';
 import Results from '@/components/game/Results';
@@ -5,8 +8,6 @@ import Scoring from '@/components/game/Scoring';
 import Starting from '@/components/game/Starting';
 import { useGameStore } from '@/store/gameStore';
 import { RoomStatus } from '@/types/socket';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
 
 export default function Game() {
   const navigate = useNavigate();

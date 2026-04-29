@@ -8,7 +8,6 @@ export default defineConfig(configEnv =>
     sharedConfig({
       env: configEnv,
       lintCommand: 'eslint "./src/**/*.{ts,tsx}"',
-      ssrInput: './server/app.ts',
       testSetupFiles: './src/setupTest.ts'
     }),
     defineConfig({

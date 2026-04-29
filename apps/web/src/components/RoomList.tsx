@@ -1,8 +1,9 @@
+import { useEffect } from 'react';
+
 import { socketService } from '@/services/socket';
 import { useGameStore } from '@/store/gameStore';
 import { RoomStatus } from '@/types/socket';
 import { getRoomStatusColor } from '@/utils/getRoomStatusColor';
-import { useEffect } from 'react';
 
 
 export default function RoomList() {

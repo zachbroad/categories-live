@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+
 import { useClientOnly } from '@/hooks/useClientOnly';
 import { socketService } from '@/services/socket';
 import { useGameStore } from '@/store/gameStore';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
 
 export default function Landing() {
   const navigate = useNavigate();
