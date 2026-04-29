@@ -3,70 +3,83 @@ import { useEffect } from 'react';
 import { socketService } from '@/services/socket';
 import { useGameStore } from '@/store/gameStore';
 import { RoomStatus } from '@/types/socket';
-import { getRoomStatusColor } from '@/utils/getRoomStatusColor';
 
+function statusBadgeClass(status: RoomStatus) {
+  switch (status) {
+    case RoomStatus.Waiting:
+      return 'bg-success';
+    case RoomStatus.Starting:
+      return 'bg-info text-dark';
+    case RoomStatus.InProgress:
+      return 'bg-warning text-dark';
+    case RoomStatus.Scoring:
+      return 'bg-info text-dark';
+    case RoomStatus.Results:
+      return 'bg-secondary';
+    default:
+      return 'bg-secondary';
+  }
+}
 
 export default function RoomList() {
-    const { availableRooms } = useGameStore();
+  const { availableRooms } = useGameStore();
 
-    useEffect(() => {
-        socketService.requestRoomList();
-    }, []);
+  useEffect(() => {
+    socketService.requestRoomList();
+  }, []);
 
-    const handleJoinRoom = (slug: string) => {
-        socketService.joinRoom(slug);
-    };
+  const handleJoinRoom = (slug: string) => {
+    socketService.joinRoom(slug);
+  };
 
-    return (
-        <div className='rounded-lg bg-white p-6 shadow-lg'>
-            <h2 className='mb-4 text-xl font-bold'>Available Rooms</h2>
+  return (
+    <div
+      className='bg-white p-3 rounded shadow border border-black'
+      style={{ maxWidth: '900px', margin: '0 auto' }}
+    >
+      <h3 className='mb-3'>Available Rooms</h3>
 
-            {availableRooms.length === 0 ? (
-                <p className='py-8 text-center text-gray-500'>
-                    No rooms available. Create one to get started!
-                </p>
-            ) : (
-                <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-                    {availableRooms.map(room => (
-                        <div
-                            key={room.id}
-                            className='rounded-lg border border-gray-200 p-4 transition hover:shadow-md'
-                        >
-                            <div className='mb-2 flex items-start justify-between'>
-                                <h3 className='text-lg font-semibold'>{room.name}</h3>
-                                <span
-                                    className={`rounded-full px-2 py-1 text-xs font-medium ${getRoomStatusColor(room)}`}
-                                >
-                                    {room.status.replace('_', ' ')}
-                                </span>
-                            </div>
+      {availableRooms.length === 0 ? (
+        <p className='text-center text-muted py-4 mb-0'>
+          No rooms available. Create one to get started!
+        </p>
+      ) : (
+        <div className='row g-3'>
+          {availableRooms.map(room => (
+            <div key={room.id} className='col-md-6 col-lg-4'>
+              <div className='card border-black h-100'>
+                <div className='card-body'>
+                  <div className='d-flex justify-content-between align-items-start mb-2'>
+                    <h5 className='card-title mb-0'>{room.name}</h5>
+                    <span className={`badge ${statusBadgeClass(room.status)}`}>
+                      {room.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <p className='card-text small mb-1'>
+                    Players: {room.clients.length} / {room.capacity}
+                  </p>
+                  {room.owner && (
+                    <p className='card-text small text-muted mb-3'>Host: {room.owner.username}</p>
+                  )}
 
-                            <div className='mb-3 text-sm text-gray-600'>
-                                <p>
-                                    Players: {room.clients.length} / {room.capacity}
-                                </p>
-                                {room.owner && <p>Host: {room.owner.username}</p>}
-                            </div>
-
-                            {room.status === RoomStatus.Waiting ? (
-                                <button
-                                    onClick={() => handleJoinRoom(room.slug)}
-                                    className='w-full rounded-md bg-purple-600 px-4 py-2 text-white transition hover:bg-purple-700'
-                                >
-                                    Join Room
-                                </button>
-                            ) : (
-                                <button
-                                    disabled
-                                    className='w-full cursor-not-allowed rounded-md bg-gray-300 px-4 py-2 text-gray-500'
-                                >
-                                    Game in Progress
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                  {room.status === RoomStatus.Waiting ? (
+                    <button
+                      onClick={() => handleJoinRoom(room.slug)}
+                      className='btn btn-sm btn-primary w-100'
+                    >
+                      Join Room
+                    </button>
+                  ) : (
+                    <button disabled className='btn btn-sm btn-secondary w-100'>
+                      Game in Progress
+                    </button>
+                  )}
                 </div>
-            )}
+              </div>
+            </div>
+          ))}
         </div>
-    );
+      )}
+    </div>
+  );
 }

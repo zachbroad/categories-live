@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import Navbar from '@/components/Navbar';
 import { useClientOnly } from '@/hooks/useClientOnly';
 import { socketService } from '@/services/socket';
 import { useGameStore } from '@/store/gameStore';
+
+const APP_TITLE = 'Categories.LIVE';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -11,96 +14,92 @@ export default function Landing() {
   const [name, setName] = useState('');
   const [connecting, setConnecting] = useState(false);
   const isClient = useClientOnly();
-  const [previousUsername, setPreviousUsername] = useState('');
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
-    setPreviousUsername(storedUsername || previousUsername);
-    setName(storedUsername || previousUsername);
+    const stored = localStorage.getItem('username');
+    if (stored) setName(stored);
   }, []);
 
-  const handleConnect = () => {
+  const handleConnect = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const username = name.trim() || `Guest${Math.floor(Math.random() * 10000)}`;
     setUsername(username);
     setConnecting(true);
-
     localStorage.setItem('username', username);
-
     socketService.connect(username);
+    setTimeout(() => navigate('/home'), 500);
+  };
 
-    // Wait a bit for connection then navigate
+  const handleSinglePlayer = () => {
+    const username = name.trim() || `Guest${Math.floor(Math.random() * 10000)}`;
+    setUsername(username);
+    localStorage.setItem('username', username);
+    socketService.connect(username);
     setTimeout(() => {
+      socketService.startSinglePlayer();
       navigate('/home');
     }, 500);
   };
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600'>
-      <div className='mx-4 w-full max-w-md rounded-lg bg-white p-8 shadow-2xl'>
-        <div className='mb-8 text-center'>
-          <h1 className='mb-2 text-4xl font-bold text-purple-600'>Categories LIVE</h1>
-          <p className='text-gray-600'>Scattergories, but online!</p>
-        </div>
+    <>
+      <Navbar center={APP_TITLE} />
 
-        <div className='space-y-6'>
-          <div>
-            <label htmlFor='username' className='mb-2 block text-sm font-medium text-gray-700'>
-              Enter your name
-            </label>
+      <div className='container'>
+        <div
+          className='bg-white p-3 mb-2 rounded shadow border border-black mx-auto'
+          style={{ maxWidth: '460px' }}
+        >
+          <h2>Play {APP_TITLE}</h2>
+          <p>Choose a username to play online with others or start a Single Player game!</p>
+
+          <form onSubmit={handleConnect}>
             {isClient && (
               <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                placeholder='Username'
                 id='username'
                 type='text'
-                value={name || previousUsername || ''}
-                onChange={e => setName(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleConnect()}
-                placeholder='Your name...'
-                className='w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:outline-none'
+                className='form-control'
                 disabled={connecting}
               />
             )}
-          </div>
 
-          <button
-            onClick={handleConnect}
-            disabled={connecting}
-            className='w-full rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-400'
-          >
-            {connecting ? (
-              <span className='flex items-center justify-center'>
-                <svg
-                  className='mr-3 -ml-1 h-5 w-5 animate-spin text-white'
-                  xmlns='http://www.w3.org/2000/svg'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                >
-                  <circle
-                    className='opacity-25'
-                    cx='12'
-                    cy='12'
-                    r='10'
-                    stroke='currentColor'
-                    strokeWidth='4'
-                  ></circle>
-                  <path
-                    className='opacity-75'
-                    fill='currentColor'
-                    d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-                  ></path>
-                </svg>
-                Connecting...
-              </span>
-            ) : (
-              'Play Now'
-            )}
-          </button>
+            <div className='d-flex justify-content-around mt-3'>
+              <button
+                className='btn btn-primary'
+                type='button'
+                onClick={handleSinglePlayer}
+                disabled={connecting}
+              >
+                Play Single Player
+              </button>
+              <button className='btn btn-success' type='submit' disabled={connecting}>
+                {connecting ? 'Connecting...' : 'Connect to Server'}
+              </button>
+            </div>
+          </form>
         </div>
 
-        <div className='mt-8 text-center text-sm text-gray-500'>
-          <p>Play with friends or join random games!</p>
+        <div
+          className='bg-white p-3 mt-4 rounded shadow border border-black mx-auto'
+          style={{ maxWidth: '720px' }}
+        >
+          <h3>How to Play</h3>
+          <p>
+            <strong>Categories</strong> (a.k.a. Scattergories) is a word game where you race to
+            come up with answers fitting a category — all starting with the same letter.
+          </p>
+          <ol>
+            <li>Each round you get a random letter and a list of categories.</li>
+            <li>Answer every category with a word that starts with that letter.</li>
+            <li>An LLM scores answers — creative ones earn more.</li>
+            <li>Highest total wins the round.</li>
+          </ol>
         </div>
       </div>
-    </div>
+    </>
   );
-
 }

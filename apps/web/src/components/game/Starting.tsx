@@ -16,29 +16,28 @@ export default function Starting() {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
   if (!currentRoom) return null;
 
   return (
-    <div className='flex min-h-[60vh] items-center justify-center'>
-      <div className='rounded-lg bg-white p-12 text-center shadow-lg'>
-        <h2 className='mb-6 text-3xl font-bold'>Game Starting!</h2>
-
-        <div className='mb-8'>
-          <div className='animate-pulse text-6xl font-bold text-purple-600'>
-            {countdown || 'GO!'}
-          </div>
+    <div className='d-flex justify-content-center'>
+      <div
+        className='bg-white p-5 rounded shadow border border-black text-center'
+        style={{ minWidth: '380px' }}
+      >
+        <h2 className='mb-4'>Game Starting!</h2>
+        <div
+          className='display-1 fw-bold text-primary mb-4'
+          style={{ animation: 'pulse 1s ease-in-out infinite' }}
+        >
+          {countdown || 'GO!'}
         </div>
-
-        <div className='text-lg text-gray-600'>
-          <p>Get ready to play Categories!</p>
-          <p className='mt-2'>
-            Round {currentRoom.currentRound} of {currentRoom.game?.rounds || 3}
-          </p>
-        </div>
+        <p className='lead mb-1'>Get ready to play Categories!</p>
+        <p className='text-muted mb-0'>
+          Round {currentRoom.currentRound} of {currentRoom.game?.rounds || 3}
+        </p>
       </div>
     </div>
   );

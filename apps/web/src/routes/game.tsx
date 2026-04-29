@@ -6,6 +6,7 @@ import Lobby from '@/components/game/Lobby';
 import Results from '@/components/game/Results';
 import Scoring from '@/components/game/Scoring';
 import Starting from '@/components/game/Starting';
+import Navbar from '@/components/Navbar';
 import { useGameStore } from '@/store/gameStore';
 import { RoomStatus } from '@/types/socket';
 
@@ -14,19 +15,25 @@ export default function Game() {
   const { currentRoom } = useGameStore();
 
   useEffect(() => {
-    if (!currentRoom) {
-      navigate('/home');
-    }
+    if (!currentRoom) navigate('/home');
   }, [currentRoom, navigate]);
 
   if (!currentRoom) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50'>
-        <div className='text-center'>
-          <div className='mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600'></div>
-          <p className='text-gray-600'>Loading game...</p>
+      <>
+        <Navbar />
+        <div className='container'>
+          <div
+            className='bg-white p-4 mt-3 rounded shadow border border-black mx-auto text-center'
+            style={{ maxWidth: '420px' }}
+          >
+            <div className='spinner-border text-primary mb-3' role='status'>
+              <span className='visually-hidden'>Loading...</span>
+            </div>
+            <p className='mb-0'>Loading game...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -43,24 +50,16 @@ export default function Game() {
       case RoomStatus.Results:
         return <Results />;
       default:
-        return <div>Unknown game state: {currentRoom.status}</div>;
+        return (
+          <div className='alert alert-warning'>Unknown game state: {currentRoom.status}</div>
+        );
     }
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-purple-50 to-blue-50'>
-      <nav className='bg-white shadow-md'>
-        <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
-          <div className='flex h-16 justify-between'>
-            <div className='flex items-center'>
-              <h1 className='text-2xl font-bold text-purple-600'>{currentRoom.name}</h1>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>{renderGameState()}</div>
-    </div>
+    <>
+      <Navbar center={currentRoom.name} />
+      <div className='container mt-3'>{renderGameState()}</div>
+    </>
   );
-
 }

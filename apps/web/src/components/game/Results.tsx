@@ -3,22 +3,26 @@ import { useNavigate } from 'react-router';
 import { socketService } from '../../services/socket';
 import { useGameStore } from '../../store/gameStore';
 
+function placeColor(idx: number) {
+  if (idx === 0) return 'text-warning';
+  if (idx === 1) return 'text-secondary';
+  if (idx === 2) return 'text-danger';
+  return 'text-muted';
+}
+
 export default function Results() {
   const navigate = useNavigate();
   const { currentRoom, clientId } = useGameStore();
 
   if (!currentRoom || !currentRoom.game) return null;
 
-  const handleContinue = () => {
-    socketService.voteGoToLobby(currentRoom.slug);
-  };
+  const handleContinue = () => socketService.voteGoToLobby(currentRoom.slug);
 
   const handleLeave = () => {
     socketService.leaveRoom(currentRoom.slug);
     navigate('/home');
   };
 
-  // Calculate scores
   const playerScores = Object.entries(currentRoom.game.results)
     .map(([playerId, result]) => {
       const client = currentRoom.clients.find(c => c.id === playerId);
@@ -37,73 +41,61 @@ export default function Results() {
   const winner = playerScores[0];
 
   return (
-    <div className='mx-auto max-w-6xl'>
-      <div className='mb-6 rounded-lg bg-white p-6 shadow-lg'>
-        <div className='mb-8 text-center'>
-          <h2 className='mb-4 text-3xl font-bold'>Round {currentRoom.currentRound} Results</h2>
+    <div className='board-item-container' style={{ maxWidth: '900px' }}>
+      <div className='bg-white p-4 rounded shadow border border-black'>
+        <div className='text-center mb-4'>
+          <h2 className='mb-2'>Round {currentRoom.currentRound} Results</h2>
           {winner && (
-            <div className='text-xl'>
-              <span className='text-gray-600'>Winner: </span>
-              <span className='font-bold text-purple-600'>{winner.username}</span>
-              <span className='text-gray-600'> with </span>
-              <span className='font-bold text-purple-600'>{winner.totalScore} points!</span>
-            </div>
+            <p className='lead mb-0'>
+              Winner: <span className='fw-bold text-primary'>{winner.username}</span> with{' '}
+              <span className='fw-bold text-primary'>{winner.totalScore} points!</span>
+            </p>
           )}
         </div>
 
-        <div className='space-y-6'>
-          {playerScores.map((player, index) => (
-            <div
-              key={player.playerId}
-              className={`rounded-lg border p-4 ${player.isMe ? 'border-purple-500 bg-purple-50' : 'border-gray-200'}`}
-            >
-              <div className='mb-3 flex items-center justify-between'>
-                <div className='flex items-center space-x-3'>
-                  <div
-                    className={`text-2xl font-bold ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-gray-600'}`}
-                  >
-                    #{index + 1}
-                  </div>
-                  <div>
-                    <h3 className='text-lg font-semibold'>{player.username}</h3>
-                    {player.isMe && <span className='text-xs text-purple-600'>You</span>}
-                  </div>
-                </div>
-                <div className='text-2xl font-bold text-purple-600'>{player.totalScore} pts</div>
-              </div>
-
-              <div className='grid grid-cols-1 gap-2 text-sm md:grid-cols-2'>
-                {currentRoom.game?.currentPrompts.map((prompt, i) => (
-                  <div key={i} className='flex justify-between'>
-                    <span className='text-gray-600'>{prompt}:</span>
-                    <div className='flex items-center space-x-2'>
-                      <span className={player.answers[i] ? 'font-medium' : 'text-gray-400'}>
-                        {player.answers[i] || 'No answer'}
-                      </span>
-                      <span
-                        className={`font-bold ${player.scores[i] > 0 ? 'text-green-600' : 'text-red-600'}`}
-                      >
-                        ({player.scores[i] || 0})
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className='mt-8 flex justify-center space-x-4'>
-          <button
-            onClick={handleContinue}
-            className='rounded-lg bg-green-500 px-8 py-3 font-semibold text-white transition hover:bg-green-600'
+        {playerScores.map((player, index) => (
+          <div
+            key={player.playerId}
+            className={`p-3 mb-3 rounded border ${
+              player.isMe ? 'border-primary bg-light' : 'border-black'
+            }`}
           >
+            <div className='d-flex justify-content-between align-items-center mb-2'>
+              <div className='d-flex align-items-center'>
+                <span className={`h3 mb-0 me-3 ${placeColor(index)}`}>#{index + 1}</span>
+                <div>
+                  <h5 className='mb-0'>{player.username}</h5>
+                  {player.isMe && <small className='text-primary'>You</small>}
+                </div>
+              </div>
+              <span className='h4 mb-0 text-primary'>{player.totalScore} pts</span>
+            </div>
+
+            <div className='row g-2 small'>
+              {currentRoom.game?.currentPrompts.map((prompt, i) => (
+                <div key={i} className='col-md-6 d-flex justify-content-between'>
+                  <span className='text-muted'>{prompt}:</span>
+                  <span>
+                    <span className={player.answers[i] ? 'fw-medium' : 'text-muted'}>
+                      {player.answers[i] || 'No answer'}
+                    </span>{' '}
+                    <span
+                      className={`fw-bold ${player.scores[i] > 0 ? 'text-success' : 'text-danger'}`}
+                    >
+                      ({player.scores[i] || 0})
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div className='d-flex justify-content-center gap-3 mt-4'>
+          <button className='btn btn-success btn-lg' onClick={handleContinue}>
             Play Again
           </button>
-          <button
-            onClick={handleLeave}
-            className='rounded-lg border border-gray-300 px-8 py-3 font-semibold text-gray-700 transition hover:bg-gray-50'
-          >
+          <button className='btn btn-outline-secondary btn-lg' onClick={handleLeave}>
             Leave Room
           </button>
         </div>

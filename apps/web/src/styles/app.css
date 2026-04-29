@@ -1,12 +1,37 @@
 @import 'tailwindcss';
+@import 'bootswatch/dist/sketchy/bootstrap.css';
 
-html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  background-color: #a05656;
+  color: black;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+.board {
+  background-color: white;
+  padding: 1rem;
+  margin: 1rem;
+  border: 1px solid grey;
+  max-width: 500px;
+}
+
+.board-item-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.board-item {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed grey;
+}
+
+.board-item p {
+  font-weight: bold;
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
 }
