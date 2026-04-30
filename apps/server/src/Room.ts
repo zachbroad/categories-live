@@ -196,7 +196,7 @@ class Room {
   }
 
   public hasClient(client: Client): boolean {
-    return this.clients.includes(client);
+    return this.clients.some(c => c.id === client.id);
   }
 
   public updateRoom(): void {
@@ -271,7 +271,7 @@ class Room {
           };
         }
         
-        const scorer = new OpenAIScorer('gpt-4o-mini', 'strict');
+        const scorer = new OpenAIScorer('gpt-4.1-nano', 'strict');
         return scorer.scoreGame(
           this.game!.letter,
           this.game!.currentPrompts,

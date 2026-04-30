@@ -8,7 +8,6 @@ import ChatMessage from './ChatMessage';
 import Client from './Client';
 import { MOTD, SERVER_HOST, SERVER_PORT } from './Config';
 import { initializeContainer } from './container';
-import { pool, testConnection } from './Database';
 import Logger from './Logger';
 import Room from './Room';
 import {
@@ -18,8 +17,15 @@ import {
   SocketData
 } from './SocketIO';
 
-// Test database connection
-await testConnection();
+const USE_POSTGRES = !!process.env.DATABASE_URL;
+
+const { pool, testConnection } = USE_POSTGRES
+  ? await import('./Database')
+  : { pool: undefined as any, testConnection: async () => {} };
+
+if (USE_POSTGRES) {
+  await testConnection();
+}
 
 const DEBUG = process.env.DEBUG === 'true';
 if (DEBUG) {
@@ -46,22 +52,24 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
   }
 );
 
-// Use PostgreSQL adapter for horizontal scaling
-io.adapter(createAdapter(pool));
+// Use PostgreSQL adapter for horizontal scaling (only when DB is configured)
+if (USE_POSTGRES) {
+  io.adapter(createAdapter(pool));
+}
 
 process.on('SIGTERM', () => {
   io.close();
-  pool.end();
+  if (USE_POSTGRES) pool.end();
 });
 
 process.on('SIGINT', async () => {
   await io.close();
-  await pool.end();
+  if (USE_POSTGRES) await pool.end();
   process.exit(0);
 });
 
 // Initialize dependency injection container
-const container = initializeContainer(io, pool);
+const container = initializeContainer(io, USE_POSTGRES ? pool : undefined);
 
 // Get services from container
 const clientService = container.resolve('clientService');
