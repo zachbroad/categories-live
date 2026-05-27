@@ -1,5 +1,7 @@
 # Categories.LIVE
 
+Live at **[categories.zachbroad.com](https://categories.zachbroad.com)**.
+
 Real-time multiplayer word game built with React, Socket.IO, and GPT-4.
 
 Players join rooms, receive a category, and race to submit answers. Responses are scored in real time using OpenAI, and results are displayed live to all participants.
