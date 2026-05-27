@@ -51,7 +51,7 @@ export default function Landing() {
           style={{ maxWidth: '460px' }}
         >
           <h2>Play {APP_TITLE}</h2>
-          <p>Choose a username to play online with others or start a Single Player game!</p>
+          <p>Choose a username to play online with others or start a single-player game.</p>
 
           <form onSubmit={handleConnect}>
             {isClient && (
@@ -93,10 +93,10 @@ export default function Landing() {
             come up with answers fitting a category — all starting with the same letter.
           </p>
           <ol>
-            <li>Each round you get a random letter and a list of categories.</li>
-            <li>Answer every category with a word that starts with that letter.</li>
-            <li>An LLM scores answers — creative ones earn more.</li>
-            <li>Highest total wins the round.</li>
+            <li>🎲 Each round you get a random letter and a list of categories.</li>
+            <li>✏️ Answer every category with a word that starts with that letter.</li>
+            <li>🤖 An LLM scores answers — creative ones earn more.</li>
+            <li>🏆 Highest total wins the round.</li>
           </ol>
         </div>
       </div>

@@ -1,9 +1,12 @@
 @import 'tailwindcss';
-@import 'bootswatch/dist/sketchy/bootstrap.css';
+@import 'bootswatch/dist/sketchy/bootstrap.css' layer(bootstrap);
+
+@layer base, bootstrap, components, utilities;
 
 body {
   background-color: #a05656;
   color: black;
+  font-family: var(--bs-body-font-family);
 }
 
 .board {
@@ -33,5 +36,5 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-weight: bold;
+  font-family: 'Cabin Sketch', cursive;
 }
